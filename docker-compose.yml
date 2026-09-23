@@ -1,0 +1,27 @@
+services:
+  # 静态站点：宿主机端口由 HOST_PORT 环境变量配置（默认 8080）
+  web:
+    build:
+      context: .
+      target: web
+    image: tailbiting-console:latest
+    ports:
+      - "${HOST_PORT:-8080}:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 3s
+
+  # 一次性校验：单元测试 -> 类型检查与构建 -> 静态 HTTP 冒烟，随后退出；
+  # 退出码即最终结果（0 通过，非 0 失败）。
+  # 运行：docker compose build verify && docker compose up verify
+  verify:
+    build:
+      context: .
+      target: verify
+    image: tailbiting-console-verify:latest
+    restart: "no"
+    command: ["npm", "run", "verify"]
