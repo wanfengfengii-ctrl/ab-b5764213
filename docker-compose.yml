@@ -1,0 +1,29 @@
+services:
+  web:
+    build:
+      context: .
+      target: runner
+    image: tailbiting-review:latest
+    container_name: tailbiting-review-web
+    ports:
+      # 宿主机端口可通过环境变量 HOST_PORT 配置，默认 8080
+      - "${HOST_PORT:-8080}:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  # 一次性复核服务：完成代码测试、构建检查和静态 HTTP 冒烟后自行退出，
+  # 以退出码报告结果。运行方式：
+  #   docker compose --profile verify run --build verify ; echo $?
+  verify:
+    profiles: ["verify"]
+    build:
+      context: .
+      target: verify
+    image: tailbiting-review-verify:latest
+    container_name: tailbiting-review-verify
+    restart: "no"
